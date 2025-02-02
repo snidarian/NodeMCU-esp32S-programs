@@ -1,90 +1,151 @@
 /*
-  Blink
-
-  Turns an LED on for one second, then off for one second, repeatedly.
-
-  Most Arduinos have an on-board LED you can control. On the UNO, MEGA and ZERO
-  it is attached to digital pin 13, on MKR1000 on pin 6. LED_BUILTIN is set to
-  the correct LED pin independent of which board is used.
-  If you want to know what pin the on-board LED is connected to on your Arduino
-  model, check the Technical Specs of your board at:
-  https://www.arduino.cc/en/Main/Products
-
-
-  modified 8 May 2014
-  by Scott Fitzgerald
-  modified 2 Sep 2016
-  by Arturo Guadalupi
-  modified 8 Sep 2016
-  by Colby Newman
-
-  This example code is in the public domain.
-
-  https://www.arduino.cc/en/Tutorial/BuiltInExamples/Blink
+ * Draw shot device
+ * 
 */
 
+// i2c control
+#include <Wire.h>
+
+// ssd1306 for oled display
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// OLED display is at 0x3C
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+
 #define LED_BUILTIN 2
-#define PIN 32
+#define BEEPER 32
+// Rotary encoder inputs
+#define CLK 25
+#define DT 26
+#define SW 13
+
+int freq = 100;
+volatile int counter = 0;
+volatile int direction = 0;
 
 
 void initialize() {
   for (int i = 0; i<7; i++) {
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  digitalWrite(PIN, HIGH);
+  digitalWrite(BEEPER, HIGH);
   delay(80);                       // wait for a second
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  digitalWrite(PIN, LOW);
-  delay(80);  
+  digitalWrite(BEEPER, LOW);
+  delay(80);
+  // setup oled display
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  
   }
 }
+
 
 void regular_or_false_start() {
   // Regular start
   if (random(100) > 50){
+    display.clearDisplay();
+    display.display();
+    display.setTextSize(2);
+    display.setCursor(40, 25);
+    display.print("FIRE");
+    display.display();
     digitalWrite(LED_BUILTIN, HIGH); 
-    digitalWrite(PIN, HIGH);
+    digitalWrite(BEEPER, HIGH);
     delay(80); 
     digitalWrite(LED_BUILTIN, LOW);   
-    digitalWrite(PIN, LOW);
+    digitalWrite(BEEPER, LOW);
     delay(50);
     digitalWrite(LED_BUILTIN, HIGH); 
-    digitalWrite(PIN, HIGH);
+    digitalWrite(BEEPER, HIGH);
     delay(80); 
     digitalWrite(LED_BUILTIN, LOW);   
-    digitalWrite(PIN, LOW);
-    delay(50);
+    digitalWrite(BEEPER, LOW);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, HIGH); 
+    digitalWrite(BEEPER, HIGH);
+    delay(500); 
+    digitalWrite(BEEPER, LOW);  
+    
   }
+  // False start
   else if (random(100) < 50) {
-    digitalWrite(PIN, HIGH);
+    display.clearDisplay();
+    display.display();
+    display.setTextSize(2);
+    display.setCursor(10, 25);
+    display.print("DONT FIRE");
+    display.display();
+    digitalWrite(BEEPER, HIGH);
     digitalWrite(LED_BUILTIN, HIGH); 
     delay(1000);
-    digitalWrite(PIN, LOW);
+    digitalWrite(BEEPER, LOW);
     digitalWrite(LED_BUILTIN, LOW); 
   }
 }
 
+void IRAM_ATTR ISR_encoder() {
+  if (digitalRead(DT) == HIGH) {
+    freq++;
+    Serial.println("Mark 1");
+  } else {
+    freq--;
+    Serial.println("Mark 2");
+  }
+}
 
-// the setup function runs once when you press reset or power the board
+//######### SETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUP
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(PIN, OUTPUT);
+  pinMode(CLK, INPUT);
+  pinMode(DT, INPUT);
+  pinMode(SW, INPUT_PULLUP);
+  pinMode(BEEPER, OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(CLK), ISR_encoder, CHANGE);
 
+  Serial.begin(9600);
+  Serial.println("Powering up.");
+  
   initialize();
 }
 
 // the loop function runs over and over again forever
 void loop() {
 
+  if (random(5) == 1) {
+  display.clearDisplay();
+  display.display();
+  }
+  display.setTextSize(1);
+  display.setCursor((random(128)), (random(64)));
+  display.print("x");
+  display.display();
+  //delay(freq);
   // trigger either a regular start or a random start
-  
-  if (random(1000) > 975) {
+
+  if (random(1000) > 980) {
         regular_or_false_start();
   }
+  if (digitalRead(SW) == LOW) {
+    Serial.println("Switch pressed");
+  }
+  Serial.print("freq: ");
+  Serial.println(freq);
   
   digitalWrite(LED_BUILTIN, HIGH);  
-  delay(100);
+  delay(30);
   digitalWrite(LED_BUILTIN, LOW);
-  delay(100);
+  delay(30);
 
 }
