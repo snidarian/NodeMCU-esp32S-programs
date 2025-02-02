@@ -25,7 +25,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define DT 26
 #define SW 13
 
-int freq = 100;
+int event_freq = 10;
 volatile int counter = 0;
 volatile int direction = 0;
 
@@ -34,10 +34,10 @@ void initialize() {
   for (int i = 0; i<7; i++) {
   digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
   digitalWrite(BEEPER, HIGH);
-  delay(80);                       // wait for a second
+  delay(50);                       // wait for a second
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
   digitalWrite(BEEPER, LOW);
-  delay(80);
+  delay(50);
   // setup oled display
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
@@ -62,13 +62,13 @@ void regular_or_false_start() {
     display.display();
     digitalWrite(LED_BUILTIN, HIGH); 
     digitalWrite(BEEPER, HIGH);
-    delay(80); 
+    delay(50); 
     digitalWrite(LED_BUILTIN, LOW);   
     digitalWrite(BEEPER, LOW);
     delay(50);
     digitalWrite(LED_BUILTIN, HIGH); 
     digitalWrite(BEEPER, HIGH);
-    delay(80); 
+    delay(50); 
     digitalWrite(LED_BUILTIN, LOW);   
     digitalWrite(BEEPER, LOW);
     delay(1000);
@@ -83,8 +83,10 @@ void regular_or_false_start() {
     display.clearDisplay();
     display.display();
     display.setTextSize(2);
-    display.setCursor(10, 25);
-    display.print("DONT FIRE");
+    display.setCursor(15, 20);
+    display.print("FALSE");
+    display.setCursor(15, 40);
+    display.print("START");
     display.display();
     digitalWrite(BEEPER, HIGH);
     digitalWrite(LED_BUILTIN, HIGH); 
@@ -96,10 +98,10 @@ void regular_or_false_start() {
 
 void IRAM_ATTR ISR_encoder() {
   if (digitalRead(DT) == HIGH) {
-    freq++;
+    event_freq++;
     Serial.println("Mark 1");
   } else {
-    freq--;
+    event_freq--;
     Serial.println("Mark 2");
   }
 }
@@ -134,18 +136,18 @@ void loop() {
   //delay(freq);
   // trigger either a regular start or a random start
 
-  if (random(1000) > 980) {
+  if (random(1000) < event_freq) {
         regular_or_false_start();
   }
   if (digitalRead(SW) == LOW) {
     Serial.println("Switch pressed");
   }
-  Serial.print("freq: ");
-  Serial.println(freq);
+  Serial.print("Event Frequency: ");
+  Serial.println(event_freq);
   
   digitalWrite(LED_BUILTIN, HIGH);  
-  delay(30);
+  //delay(30);
   digitalWrite(LED_BUILTIN, LOW);
-  delay(30);
+  //delay(30);
 
 }
