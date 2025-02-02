@@ -21,13 +21,16 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define LED_BUILTIN 2
 #define BEEPER 32
 // Rotary encoder inputs
-#define CLK 25
+#define CLK 34
 #define DT 26
 #define SW 13
 
-int event_freq = 10;
-volatile int counter = 0;
-volatile int direction = 0;
+int event_freq = 25;
+int currentStateCLK;
+int previousStateCLK;
+String encdir ="";
+
+int false_start_ratio = 1;
 
 
 void initialize() {
@@ -53,12 +56,14 @@ void initialize() {
 
 void regular_or_false_start() {
   // Regular start
-  if (random(100) > 50){
+  int event_choice = random(100);
+  if (event_choice > 50){
     display.clearDisplay();
     display.display();
     display.setTextSize(2);
     display.setCursor(40, 25);
     display.print("FIRE");
+    display.invertDisplay(true);
     display.display();
     digitalWrite(LED_BUILTIN, HIGH); 
     digitalWrite(BEEPER, HIGH);
@@ -79,7 +84,7 @@ void regular_or_false_start() {
     
   }
   // False start
-  else if (random(100) < 50) {
+  else if (event_choice < 50) {
     display.clearDisplay();
     display.display();
     display.setTextSize(2);
@@ -87,6 +92,7 @@ void regular_or_false_start() {
     display.print("FALSE");
     display.setCursor(15, 40);
     display.print("START");
+    display.invertDisplay(false);
     display.display();
     digitalWrite(BEEPER, HIGH);
     digitalWrite(LED_BUILTIN, HIGH); 
@@ -96,6 +102,7 @@ void regular_or_false_start() {
   }
 }
 
+/*
 void IRAM_ATTR ISR_encoder() {
   if (digitalRead(DT) == HIGH) {
     event_freq++;
@@ -105,6 +112,7 @@ void IRAM_ATTR ISR_encoder() {
     Serial.println("Mark 2");
   }
 }
+*/
 
 //######### SETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUPSETUP
 void setup() {
@@ -114,7 +122,7 @@ void setup() {
   pinMode(DT, INPUT);
   pinMode(SW, INPUT_PULLUP);
   pinMode(BEEPER, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(CLK), ISR_encoder, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(CLK), ISR_encoder, CHANGE);
 
   Serial.begin(9600);
   Serial.println("Powering up.");
@@ -125,18 +133,41 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
 
-  if (random(5) == 1) {
+  currentStateCLK = digitalRead(CLK);
+  if (currentStateCLK != previousStateCLK) {
+    if (digitalRead(DT) != currentStateCLK) {
+      event_freq --;
+      encdir ="CCW";
+      Serial.println("CCW");
+    }
+    else {
+      //encoder is rotating clockwise
+      event_freq ++;
+      encdir ="CW";
+      Serial.println("CW");
+    }
+    previousStateCLK = currentStateCLK;
+  }
+  
+  if (random(9) == 1) {
+  display.invertDisplay(false);
   display.clearDisplay();
   display.display();
+  display.setTextSize(1);
+  display.setCursor(2,2);
+  display.print("\tEF: ");
+  display.print(event_freq);
+  display.print("/10k \tFSR: ");
+  display.print(false_start_ratio);
+  display.println(":1");
   }
   display.setTextSize(1);
-  display.setCursor((random(128)), (random(64)));
+  display.setCursor((random(15,128)), (random(14,64)));
   display.print("x");
   display.display();
-  //delay(freq);
+  
   // trigger either a regular start or a random start
-
-  if (random(1000) < event_freq) {
+  if (random(10000) < event_freq) {
         regular_or_false_start();
   }
   if (digitalRead(SW) == LOW) {
