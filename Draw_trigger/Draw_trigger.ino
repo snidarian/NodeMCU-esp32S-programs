@@ -23,7 +23,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // Rotary encoder inputs
 #define CLK 34
 #define DT 26
-#define SW 13
+#define SW 35
 
 int event_freq = 25;
 int currentStateCLK;
@@ -118,8 +118,8 @@ void IRAM_ATTR ISR_encoder() {
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(CLK, INPUT);
-  pinMode(DT, INPUT);
+  pinMode(CLK, INPUT_PULLUP);
+  pinMode(DT, INPUT_PULLUP);
   pinMode(SW, INPUT_PULLUP);
   pinMode(BEEPER, OUTPUT);
   //attachInterrupt(digitalPinToInterrupt(CLK), ISR_encoder, CHANGE);
@@ -170,8 +170,8 @@ void loop() {
   if (random(10000) < event_freq) {
         regular_or_false_start();
   }
-  if (digitalRead(SW) == LOW) {
-    Serial.println("Switch pressed");
+  if (digitalRead(SW) == HIGH11) {
+    Serial.println("================Switch pressed============");
   }
   Serial.print("Event Frequency: ");
   Serial.println(event_freq);
